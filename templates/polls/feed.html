@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero-banner">
+    <h1 class="hero-title">Kararsız mı kaldın? 🤔</h1>
+    <p class="hero-subtitle">İki seçenek arasında mı kaldın? Topluluğa danış, anketini aç veya diğer kararsızlara oy ver!</p>
+    <div>
+        <a href="{% url 'polls:create' %}" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 1rem;">
+            ✍️ Hemen Anket Aç
+        </a>
+    </div>
+</section>
+
+<div class="feed-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 700;">Güncel Anketler</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ polls|length }} Anket</span>
+    </div>
+
+    {% for poll in polls %}
+        <article class="card">
+            <div class="poll-header">
+                <div class="creator-info">
+                    <span>Oluşturan:</span>
+                    <span class="creator-name">@{{ poll.creator.username }}</span>
+                </div>
+                <div style="color: var(--text-muted);">
+                    {{ poll.created_at|timesince }} önce
+                </div>
+            </div>
+
+            <a href="{% url 'polls:detail' poll.pk %}" class="poll-question">
+                {{ poll.question }}
+            </a>
+
+            <!-- Seçenekler Önizlemesi -->
+            <div class="options-list">
+                {% for option in poll.options.all %}
+                    <div class="option-result">
+                        {% if poll.pk in voted_poll_ids %}
+                            <div class="option-progress" style="width: {{ option.vote_percentage }}%;"></div>
+                        {% endif %}
+                        <div class="option-result-content">
+                            <span class="option-text">{{ option.text }}</span>
+                            {% if poll.pk in voted_poll_ids %}
+                                <span class="option-stats">%{{ option.vote_percentage }} ({{ option.vote_count }} oy)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
+                <span style="color: var(--text-muted);">🗳️ Toplam <strong>{{ poll.total_votes }}</strong> oy</span>
+                <div>
+                    {% if poll.pk in voted_poll_ids %}
+                        <span style="color: var(--success); font-weight: 600; margin-right: 0.5rem;">✓ Oy Kullandın</span>
+                        <a href="{% url 'polls:detail' poll.pk %}" class="btn btn-secondary btn-sm">Detay</a>
+                    {% else %}
+                        <a href="{% url 'polls:detail' poll.pk %}" class="btn btn-primary btn-sm">Oy Ver 👉</a>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+    {% empty %}
+        <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🏜️</div>
+            <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Henüz hiç anket açılmamış!</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">İlk kararsızlığı sen sorarak topluluğu harekete geçir.</p>
+            <a href="{% url 'polls:create' %}" class="btn btn-primary">+ İlk Anketi Sen Başlat</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

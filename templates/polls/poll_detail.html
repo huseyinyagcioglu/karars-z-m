@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ poll.question }} - Kararsızım{% endblock %}
+
+{% block content %}
+<div style="max-width: 640px; margin: 1.5rem auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'polls:feed' %}" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+            ← Akışa Geri Dön
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="poll-header">
+            <div class="creator-info">
+                <span>Soran:</span>
+                <span class="creator-name">@{{ poll.creator.username }}</span>
+            </div>
+            <div style="color: var(--text-muted);">
+                {{ poll.created_at|date:"d M Y, H:i" }}
+            </div>
+        </div>
+
+        <h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 1.5rem; line-height: 1.4;">
+            {{ poll.question }}
+        </h1>
+
+        {% if has_voted %}
+            <!-- OY KULLANILMIŞSA: SONUÇLARI GÖSTER -->
+            <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+                {% if user.is_authenticated %}
+                    ✓ Bu ankette oyunuz kaydedildi.
+                {% else %}
+                    ✓ Misafir olarak oy kullandınız.
+                {% endif %}
+            </div>
+
+            <div class="options-list">
+                {% for option in poll.options.all %}
+                    <div class="option-result">
+                        <div class="option-progress" style="width: {{ option.vote_percentage }}%;"></div>
+                        <div class="option-result-content">
+                            <span class="option-text">
+                                {{ option.text }}
+                                {% if user_vote and user_vote.option == option %}
+                                    <span class="your-vote-tag">Senin Oyun</span>
+                                {% endif %}
+                            </span>
+                            <span class="option-stats">%{{ option.vote_percentage }} ({{ option.vote_count }} oy)</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.9rem;">
+                <span>Toplam Oy: <strong>{{ poll.total_votes }}</strong></span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(window.location.href); alert('Anket bağlantısı panoya kopyalandı!');">
+                    🔗 Paylaş
+                </button>
+            </div>
+
+        {% else %}
+            <!-- OY KULLANILMAMIŞSA: OY VERME FORMU -->
+            <form method="post" action="{% url 'polls:vote' poll.pk %}">
+                {% csrf_token %}
+                <div class="options-list">
+                    {% for option in poll.options.all %}
+                        <label class="option-radio-label">
+                            <input type="radio" name="option" value="{{ option.id }}" required>
+                            <span>{{ option.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                {% if not user.is_authenticated %}
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 1rem 0;">
+                        💡 <em>Misafir olarak oy kullanıyorsunuz. Üye olmadan da karar vermeye destek olabilirsiniz!</em>
+                    </p>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary btn-full" style="padding: 0.85rem; font-size: 1rem; margin-top: 1rem;">
+                    🗳️ Oyumu Gönder
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

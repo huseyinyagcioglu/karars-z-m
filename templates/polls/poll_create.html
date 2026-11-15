@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Yeni Anket Aç - Kararsızım{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 1.5rem auto;">
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'polls:feed' %}" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+            ← Akışa Geri Dön
+        </a>
+    </div>
+
+    <div class="card">
+        <h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Yeni Anket Oluştur 📝</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Aklına takılan soruyu sor, en az 2, en çok 5 seçenek ekle.
+        </p>
+
+        <form method="post" id="pollForm">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.question.id_for_label }}">{{ form.question.label }}</label>
+                {{ form.question }}
+                {% if form.question.errors %}
+                    <div class="form-error">{{ form.question.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                    <label class="form-label" style="margin-bottom: 0;">Seçenekler (Min 2 - Maks 5)</label>
+                    <span id="optionCountText" style="font-size: 0.8rem; color: var(--text-muted);">2 / 5 Seçenek</span>
+                </div>
+
+                <div id="optionsContainer">
+                    {% for opt in entered_options %}
+                        <div class="option-input-row">
+                            <input type="text" name="options" class="form-control" placeholder="Seçenek {{ forloop.counter }}" value="{{ opt }}" required>
+                            <button type="button" class="btn btn-danger-outline btn-sm remove-option-btn" title="Seçeneği Kaldır">✕</button>
+                        </div>
+                    {% empty %}
+                        <div class="option-input-row">
+                            <input type="text" name="options" class="form-control" placeholder="Seçenek 1" required>
+                            <button type="button" class="btn btn-danger-outline btn-sm remove-option-btn" title="Seçeneği Kaldır">✕</button>
+                        </div>
+                        <div class="option-input-row">
+                            <input type="text" name="options" class="form-control" placeholder="Seçenek 2" required>
+                            <button type="button" class="btn btn-danger-outline btn-sm remove-option-btn" title="Seçeneği Kaldır">✕</button>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div style="margin-top: 0.75rem;">
+                    <button type="button" id="addOptionBtn" class="btn btn-secondary btn-sm">
+                        + Seçenek Ekle
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="padding: 0.85rem; font-size: 1rem; margin-top: 1.5rem;">
+                🚀 Anketi Yayınla
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('optionsContainer');
+    const addBtn = document.getElementById('addOptionBtn');
+    const countText = document.getElementById('optionCountText');
+    const minOptions = 2;
+    const maxOptions = 5;
+
+    function updateState() {
+        const rows = container.querySelectorAll('.option-input-row');
+        const count = rows.length;
+        countText.textContent = `${count} / ${maxOptions} Seçenek`;
+
+        // Buton durumu
+        if (count >= maxOptions) {
+            addBtn.disabled = true;
+            addBtn.style.opacity = '0.5';
+            addBtn.style.cursor = 'not-allowed';
+        } else {
+            addBtn.disabled = false;
+            addBtn.style.opacity = '1';
+            addBtn.style.cursor = 'pointer';
+        }
+
+        // Silme butonları durumu (en az 2 kalmalı)
+        rows.forEach((row, index) => {
+            const removeBtn = row.querySelector('.remove-option-btn');
+            const input = row.querySelector('input');
+            input.placeholder = `Seçenek ${index + 1}`;
+            if (count <= minOptions) {
+                removeBtn.disabled = true;
+                removeBtn.style.visibility = 'hidden';
+            } else {
+                removeBtn.disabled = false;
+                removeBtn.style.visibility = 'visible';
+            }
+        });
+    }
+
+    // Seçenek Ekle
+    addBtn.addEventListener('click', function() {
+        const currentCount = container.querySelectorAll('.option-input-row').length;
+        if (currentCount < maxOptions) {
+            const newRow = document.createElement('div');
+            newRow.className = 'option-input-row';
+            newRow.innerHTML = `
+                <input type="text" name="options" class="form-control" placeholder="Seçenek ${currentCount + 1}" required>
+                <button type="button" class="btn btn-danger-outline btn-sm remove-option-btn" title="Seçeneği Kaldır">✕</button>
+            `;
+            container.appendChild(newRow);
+            updateState();
+            newRow.querySelector('input').focus();
+        }
+    });
+
+    // Seçenek Kaldır (Event Delegation)
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-option-btn')) {
+            const rows = container.querySelectorAll('.option-input-row');
+            if (rows.length > minOptions) {
+                e.target.closest('.option-input-row').remove();
+                updateState();
+            }
+        }
+    });
+
+    updateState();
+});
+</script>
+{% endblock %}
